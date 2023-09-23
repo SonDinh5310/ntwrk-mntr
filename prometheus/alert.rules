@@ -1,0 +1,6 @@
+groups:
+ - name: test
+   rules:
+   - alert: InstanceDown
+     expr: up == 0
+     for: 1m

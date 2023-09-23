@@ -1,0 +1,88 @@
+version: "2.1"
+
+networks:
+    monitor-net:
+        driver: bridge
+
+volumes:
+    prometheus_data: {}
+    grafana_data: {}
+
+services:
+    prometheus:
+        image: prom/prometheus:v2.46.0
+        container_name: prometheus
+        command:
+            - "--config.file=/etc/prometheus/prometheus.yml"
+            - "--storage.tsdb.path=/prometheus"
+            - "--web.console.libraries=/etc/prometheus/console_libraries"
+            - "--web.console.templates=/etc/prometheus/consoles"
+            - "--web.enable-lifecycle"
+        ports:
+            - 9090:9090
+        expose:
+            - 9090
+        restart: always
+        volumes:
+            - ./prometheus:/etc/prometheus
+            - prometheus_data:/prometheus
+        networks:
+            - monitor-net
+        labels:
+            org.label-schema.group: "monitoring"
+
+    grafana:
+        image: grafana/grafana:10.0.3
+        container_name: grafana
+        volumes:
+            # - grafana_data:/var/lib/grafana
+            - ./grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards
+            - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources
+        environment:
+            - GF_SECURITY_ADMIN_USER=admin
+            - GF_SECURITY_ADMIN_PASSWORD=admin5310
+            - GF_USERS_ALLOW_SIGN_UP=false
+        restart: always
+        ports:
+            - 4000:3000
+        expose:
+            - 3000
+        networks:
+            - monitor-net
+        labels:
+            org.label-schema.group: "monitoring"
+
+    alertmanager:
+        image: prom/alertmanager:v0.25.0
+        container_name: alertmanager
+        volumes:
+            - ./alertmanager:/etc/alertmanager
+        command:
+            - "--config.file=/etc/alertmanager/alertmanager.yml"
+            - "--storage.path=/alertmanager"
+        restart: always
+        ports:
+            - 9093:9093
+        expose:
+            - 9093
+        networks:
+            - monitor-net
+        labels:
+            org.label-schema.group: "monitoring"
+
+    snmpexporter:
+        image: prom/snmp-exporter
+        container_name: snmpexporter
+        volumes:
+            - ./snmpexporter:/etc/snmp_exporter
+        command:
+            - --config.file=/etc/snmp_exporter/snmp.yml
+        ports:
+            - 9116:9116
+        expose:
+            - 9116
+        restart: always
+        networks:
+            - monitor-net
+        labels:
+            org.label-schema.group: "monitoring"

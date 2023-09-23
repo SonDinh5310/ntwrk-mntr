@@ -1,0 +1,39 @@
+# my global config
+global:
+  scrape_interval: 15s # Set the scrape interval to every 15s.
+  evaluation_interval: 15s # Evaluate rules every 15s.
+  # scrape_timeout is set to the global default (10s).
+
+# Alertmanager configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ["alertmanager:9093"]
+
+rule_files:
+  - "alert.rules"
+
+scrape_configs:
+  - job_name: "prometheus"
+    scrape_interval: 5s
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  - job_name: "snmp"
+    metrics_path: /snmp
+    params:
+      module: [if_mib]
+    static_configs:
+      - targets: ["192.168.1.1:161"]
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: "snmpexporter:9116" # URL as shown on the UI
+
+  - job_name: "openwrt-newifi3d2"
+    scrape_interval: 5s
+    static_configs:
+      - targets: ["192.168.1.1:9100"]
